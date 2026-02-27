@@ -1,7 +1,7 @@
 config {
   type: "operations",
   name: "fct_daily_order",
-  tags: ["external", "gcs", "daily"]
+  tags: ["external", "gcs"]
 }
 
 
