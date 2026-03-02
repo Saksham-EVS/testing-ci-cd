@@ -52,7 +52,7 @@ steps:
         # This command triggers the release config to re-compile from its tracked branch
         # We need the output to get the name of the new compilation result
         export _COMPILATION_RESULT="$(jq -r '.name' /workspace/response_clean.json)"
-        curl -s -X POST \
+        curl -s -X PATCH \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
           -d "{\"gitCommitish\":\"${COMMIT_SHA}\",\"releaseCompilationResult\":\"${_COMPILATION_RESULT}\"}"
