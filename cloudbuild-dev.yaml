@@ -34,11 +34,31 @@ steps:
         curl -s -X POST \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
-          -d '{"gitCommitish":"dev"}' \
+          -d '{"gitCommitish":"main"}' \
           "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/compilationResults" \
           | tee /workspace/response.json
         tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
         echo ">>> Compilation result resource created."
+
+  - id: "Refresh Dataform Release Configuration and Get Latest Compilation"
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        echo ">>> Refreshing Dataform Release Configuration '${_RELEASE_CONFIG_ID}'..."
+        # This command triggers the release config to re-compile from its tracked branch
+        # We need the output to get the name of the new compilation result
+        export COMPILATION_RESULT="$(jq -r '.name' /workspace/response_clean.json)"
+        curl -s -X POST \
+          -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+          -H "Content-Type: application/json" \
+          -d "{\"gitCommitish\":\"${COMMIT_SHA}\",\"releaseCompilationResult\":\"${COMPILATION_RESULT}\"}"
+          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease" \
+          | tee /workspace/release_response.json
+        echo ">>> API release response:"
+        cat /workspace/release_response.json
 
   # - id: "Execute Dataform Unit Tests"
   #   name: "python:3.11"
@@ -58,29 +78,29 @@ steps:
   #       python -m dataform_unit_testing
   #       echo ">>> Unit tests completed."
 
-  - id: "Create and Merge PR to test"
-    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
-    entrypoint: bash
-    secretEnv: ["DF_GITHUB_TOKEN"]
-    args:
-      - -c
-      - |
-        set -euo pipefail
-        echo ">>> Installing GitHub CLI..."
-        apt-get update -y && apt-get install -y wget git >/dev/null
-        wget -q https://github.com/cli/cli/releases/download/v2.62.0/gh_2.62.0_linux_amd64.deb
-        apt-get install -y ./gh_2.62.0_linux_amd64.deb >/dev/null
-        echo ">>> Authenticating GitHub CLI..."
-        echo "$$DF_GITHUB_TOKEN" | gh auth login --with-token
-        echo ">>> Creating PR from dev → test..."
-        gh pr create \
-          --repo "Saksham-EVS/GCP-Dataform-Demo" \
-          --base test \
-          --head dev \
-          --title "Promote dev → test (Automated CI)" \
-          --body "Automated promotion triggered after successful Dataform unit tests." \
-        | xargs gh pr merge --merge --admin
-        echo ">>> PR merged successfully!"
+  # - id: "Create and Merge PR to test"
+  #   name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+  #   entrypoint: bash
+  #   secretEnv: ["DF_GITHUB_TOKEN"]
+  #   args:
+  #     - -c
+  #     - |
+  #       set -euo pipefail
+  #       echo ">>> Installing GitHub CLI..."
+  #       apt-get update -y && apt-get install -y wget git >/dev/null
+  #       wget -q https://github.com/cli/cli/releases/download/v2.62.0/gh_2.62.0_linux_amd64.deb
+  #       apt-get install -y ./gh_2.62.0_linux_amd64.deb >/dev/null
+  #       echo ">>> Authenticating GitHub CLI..."
+  #       echo "$$DF_GITHUB_TOKEN" | gh auth login --with-token
+  #       echo ">>> Creating PR from dev → test..."
+  #       gh pr create \
+  #         --repo "Saksham-EVS/GCP-Dataform-Demo" \
+  #         --base test \
+  #         --head dev \
+  #         --title "Promote dev → test (Automated CI)" \
+  #         --body "Automated promotion triggered after successful Dataform unit tests." \
+  #       | xargs gh pr merge --merge --admin
+  #       echo ">>> PR merged successfully!"
 
 availableSecrets:
   secretManager:
