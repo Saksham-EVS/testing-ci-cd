@@ -40,29 +40,29 @@ steps:
         tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
         echo ">>> Compilation result resource created."
 
-  - id: "Refresh Dataform Release Configuration and Get Latest Compilation"
-    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        set -euo pipefail
-        echo ">>> Refreshing Dataform Release Configuration ..."
-        apt-get update && apt-get install -y jq 
+  # - id: "Refresh Dataform Release Configuration and Get Latest Compilation"
+  #   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  #   entrypoint: 'bash'
+  #   args:
+  #     - '-c'
+  #     - |
+  #       set -euo pipefail
+  #       echo ">>> Refreshing Dataform Release Configuration ..."
+  #       apt-get update && apt-get install -y jq 
 
-        echo "Using commit SHA: ${COMMIT_SHA}"
-        echo "Using compilation result: $(jq -r '.name' /workspace/response_clean.json)"
+  #       echo "Using commit SHA: ${COMMIT_SHA}"
+  #       echo "Using compilation result: $(jq -r '.name' /workspace/response_clean.json)"
 
-        # PATCH request with updateMask
-        curl -s -X PATCH \
-          -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-          -H "Content-Type: application/json" \
-          -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
-          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
-          | tee /workspace/release_response.json
+  #       # PATCH request with updateMask
+  #       curl -s -X PATCH \
+  #         -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  #         -H "Content-Type: application/json" \
+  #         -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
+  #         "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
+  #         | tee /workspace/release_response.json
 
-        echo ">>> API release response:"
-        cat /workspace/release_response.json
+  #       echo ">>> API release response:"
+  #       cat /workspace/release_response.json
 
   # - id: "Execute Dataform Unit Tests"
   #   name: "python:3.11"
