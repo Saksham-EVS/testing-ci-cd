@@ -1,5 +1,5 @@
 config {
-    name: "fct_daily_new",
+    name: "fct_daily_new2",
     schema: "raw_dataform_cicd_testing_saksham",
     type: "incremental",
     tags: ["daily"]
