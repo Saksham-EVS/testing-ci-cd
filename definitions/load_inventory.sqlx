@@ -1,7 +1,9 @@
 config {
-    name: "fct_daily",
+    name: "fct_daily_new",
+    schema: "raw_dataform_cicd_testing_saksham",
     type: "incremental",
     tags: ["daily"]
 }
+
 
 SELECT * FROM `${project_configs.projectId}.${project_configs.env_map[project_configs.projectId].dataset}.fct_daily_order`
