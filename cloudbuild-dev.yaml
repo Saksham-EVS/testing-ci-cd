@@ -1,4 +1,5 @@
 logsBucket: "gs://testing-ci-cd-dataform-saksham/logs"
+
 substitutions:
   _LOCATION: us-central1
   _REPO: testing-ci-cd
@@ -85,5 +86,5 @@ availableSecrets:
   secretManager:
     - versionName: projects/388206646321/secrets/DF_CRED/versions/1
       env: 'DF_CRED'
-    - versionName: projects/388206646321/secrets/saksham-git-secret/versions/2
+    - versionName: projects/388206646321/secrets/saksham-git-pat-new/versions/1
       env: "DF_GITHUB_TOKEN"
