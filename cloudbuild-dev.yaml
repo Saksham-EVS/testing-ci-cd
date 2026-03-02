@@ -61,9 +61,6 @@ steps:
           "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
           | tee /workspace/release_response.json
 
-        echo ">>> API release response:"
-        cat /workspace/release_response.json
-
 
 
 
@@ -88,6 +85,7 @@ steps:
   #       export GCP_PROJECT_ID=${_PROJECT}
   #       python -m dataform_unit_testing
   #       echo ">>> Unit tests completed."
+
 
   # - id: "Create and Merge PR to test"
   #   name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
