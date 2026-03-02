@@ -51,13 +51,13 @@ steps:
         apt-get update && apt-get install -y jq 
 
         echo "Using commit SHA: ${COMMIT_SHA}"
-        echo "Using compilation result: ${jq -r '.name' /workspace/response_clean.json}"
+        echo "Using compilation result: $(jq -r '.name' /workspace/response_clean.json)"
 
         # PATCH request with updateMask
         curl -s -X PATCH \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
-          -d "{\"releaseCompilationResult\":\"${jq -r '.name' /workspace/response_clean.json}\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
+          -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
           "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
           | tee /workspace/release_response.json
 
