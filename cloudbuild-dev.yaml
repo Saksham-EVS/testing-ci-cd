@@ -47,7 +47,8 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        echo ">>> Refreshing Dataform Release Configuration '${_RELEASE_CONFIG_ID}'..."
+        echo ">>> Refreshing Dataform Release Configuration ..."
+        apt-get update && apt-get install -y jq 
         # This command triggers the release config to re-compile from its tracked branch
         # We need the output to get the name of the new compilation result
         export _COMPILATION_RESULT="$(jq -r '.name' /workspace/response_clean.json)"
