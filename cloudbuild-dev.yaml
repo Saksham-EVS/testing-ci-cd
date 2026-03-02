@@ -6,41 +6,65 @@ substitutions:
   _PROJECT: 	data-exporter-424705
 
 steps:
-  - id: "Dataform Compilation"
-    name: "node:20"
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        set -euo pipefail
-        echo ">>> Installing Dataform CLI..."
-        npm install -g @dataform/cli 
-        echo ">>> Compiling Dataform project..."
-        dataform compile --project-dir . 
-        echo ">>> Compilation finished."
+  # - id: "Dataform Compilation"
+  #   name: "node:20"
+  #   entrypoint: bash
+  #   args:
+  #     - -c
+  #     - |
+  #       set -euo pipefail
+  #       echo ">>> Installing Dataform CLI..."
+  #       npm install -g @dataform/cli 
+  #       echo ">>> Compiling Dataform project..."
+  #       dataform compile --project-dir . 
+  #       echo ">>> Compilation finished."
 
-  - id: "Create Compilation Result Resource"
-    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
-    entrypoint: bash
-    secretEnv: ['DF_CRED']
-    args:
-      - -c
-      - |
-        set -euo pipefail
-        echo ">>> Authenticating with GCP..."
-        echo "$$DF_CRED" > /workspace/.df-credentials.json
-        gcloud auth activate-service-account --key-file=/workspace/.df-credentials.json --project=${_PROJECT} --quiet
-        echo ">>> Creating compilation result resource..."
-        curl -s -X POST \
-          -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-          -H "Content-Type: application/json" \
-          -d '{"releaseConfig":"projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease"}' \
-          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/compilationResults" \
-          | tee /workspace/response.json
-        tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
-        echo ">>> Compilation result resource created."
+  # - id: "Create Compilation Result Resource"
+  #   name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+  #   entrypoint: bash
+  #   secretEnv: ['DF_CRED']
+  #   args:
+  #     - -c
+  #     - |
+  #       set -euo pipefail
+  #       echo ">>> Authenticating with GCP..."
+  #       echo "$$DF_CRED" > /workspace/.df-credentials.json
+  #       gcloud auth activate-service-account --key-file=/workspace/.df-credentials.json --project=${_PROJECT} --quiet
+  #       echo ">>> Creating compilation result resource..."
+  #       curl -s -X POST \
+  #         -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  #         -H "Content-Type: application/json" \
+  #         -d '{"releaseConfig":"projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease"}' \
+  #         "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/compilationResults" \
+  #         | tee /workspace/response.json
+  #       tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
+  #       echo ">>> Compilation result resource created."
 
-  - id: "Refresh Dataform Release Configuration and Get Latest Compilation"
+  # - id: "Refresh Dataform Release Configuration and Get Latest Compilation"
+  #   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  #   entrypoint: 'bash'
+  #   args:
+  #     - '-c'
+  #     - |
+  #       set -euo pipefail
+  #       echo ">>> Refreshing Dataform Release Configuration ..."
+  #       apt-get update && apt-get install -y jq 
+
+  #       echo "Using commit SHA: ${COMMIT_SHA}"
+  #       echo "Using compilation result: $(jq -r '.name' /workspace/response_clean.json)"
+
+  #       # PATCH request with updateMask
+  #       curl -s -X PATCH \
+  #         -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  #         -H "Content-Type: application/json" \
+  #         -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
+  #         "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
+  #         | tee /workspace/release_response.json
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+  - id: "Refresh Dataform Release Configuration with latest commit"
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: 'bash'
     args:
@@ -49,19 +73,29 @@ steps:
         set -euo pipefail
         echo ">>> Refreshing Dataform Release Configuration ..."
         apt-get update && apt-get install -y jq 
-
         echo "Using commit SHA: ${COMMIT_SHA}"
-        echo "Using compilation result: $(jq -r '.name' /workspace/response_clean.json)"
 
-        # PATCH request with updateMask
+        curl -s -X PATCH \
+          -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+          -H "Content-Type: application/json" \
+          -d "{\"gitCommitish\":\"${COMMIT_SHA}\"}" \
+          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=gitCommitish" \
+
+        curl -s -X POST \
+          -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+          -H "Content-Type: application/json" \
+          -d '{"releaseConfig":"projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease"}' \
+          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/compilationResults" \
+          | tee /workspace/response.json
+        tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
+
+
         curl -s -X PATCH \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
           -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
           "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
           | tee /workspace/release_response.json
-
-
 
 
 
