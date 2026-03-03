@@ -1,6 +1,6 @@
 config {
-    type: "table",
-    name: "fct_daily_new",
+    type: "incremental",
+    name: "fct_daily_new2",
     schema: "raw_dataform_cicd_testing_saksham",
     tags: ["daily","express"]
 }
