@@ -1,12 +1,13 @@
 config {
-    type: "incremental",
-    name: "fct_daily_new2",
+    type: "table",
+    name: "fct_daily_new3",
     schema: "raw_dataform_cicd_testing_saksham",
     tags: ["daily","express"]
 }
 
 
 SELECT * FROM `${project_configs.projectId}.${project_configs.env_map[project_configs.projectId].dataset}.fct_daily_order`
+
 
 
 
