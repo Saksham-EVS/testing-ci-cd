@@ -11,7 +11,7 @@ const env_map = {
     },
     "my-prod-project": {
       env: "prod",
-      bucket: "prod-raw-bucket",
+      bucket: "prod-raw",
       dataset: "prod_landing"
     }
   };
@@ -23,3 +23,4 @@ module.exports={
     env_map,
     projectId
 }
+
