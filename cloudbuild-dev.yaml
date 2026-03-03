@@ -109,8 +109,6 @@ steps:
           | tee /workspace/release_response.json
 
 
-
-
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   # - id: "Execute Dataform Unit Tests"
@@ -162,3 +160,4 @@ availableSecrets:
       env: 'DF_CRED'
     # - versionName: projects/388206646321/secrets/saksham-git-pat-new/versions/1
     #   env: "DF_GITHUB_TOKEN"
+
