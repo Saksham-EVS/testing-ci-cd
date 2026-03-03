@@ -64,7 +64,7 @@ steps:
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-  - id: "Refresh Dataform Release Configuration with latest commit"
+  - id: "Entire Pipeline"
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: 'bash'
     secretEnv: ['DF_CRED']
@@ -72,36 +72,41 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        echo ">>> Authenticating with GCP..."
+        echo "------------------------------------------Authenticating with GCP..."
         echo "$$DF_CRED" > /workspace/.df-credentials.json
         gcloud auth activate-service-account --key-file=/workspace/.df-credentials.json --project=${_PROJECT} --quiet
-        echo ">>> Refreshing Dataform Release Configuration ..."
-        apt-get update && apt-get install -y jq 
-        echo "Using commit SHA: ${COMMIT_SHA}"
 
+
+        echo "------------------------------------------Installing required libraries..."
+        apt-get update && apt-get install -y jq 
+
+
+        echo "------------------------------------------Refreshing Dataform Release Configuration with latest COMMIT SHA ..."
+        echo "------------------------------------------Using commit SHA: ${COMMIT_SHA}"
         curl -s -X PATCH \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
           -d "{\"gitCommitish\":\"${COMMIT_SHA}\"}" \
-          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=gitCommitish" \
+          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/finaltesting?updateMask=gitCommitish" \
 
+
+        echo "------------------------------------------Compilation from the releaseConfig..."
         curl -s -X POST \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
-          -d '{"releaseConfig":"projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease"}' \
+          -d '{"releaseConfig":"projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/finaltesting"}' \
           "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/compilationResults" \
           | tee /workspace/response.json
         tr -d '\r' < /workspace/response.json > /workspace/response_clean.json
 
 
+        echo "------------------------------------------Sync back the releaseConfig with Compilation Result..."
         curl -s -X PATCH \
           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
           -H "Content-Type: application/json" \
           -d "{\"releaseCompilationResult\":\"$(jq -r '.name' /workspace/response_clean.json)\",\"gitCommitish\":\"${COMMIT_SHA}\"}" \
-          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/testingrelease?updateMask=releaseCompilationResult,gitCommitish" \
+          "https://dataform.googleapis.com/v1beta1/projects/${_PROJECT}/locations/${_LOCATION}/repositories/${_REPO}/releaseConfigs/finaltesting?updateMask=releaseCompilationResult,gitCommitish" \
           | tee /workspace/release_response.json
-
-
 
 
   # - id: "Execute Dataform Unit Tests"
